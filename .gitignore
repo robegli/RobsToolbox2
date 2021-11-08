@@ -1,6 +1,9 @@
 
 /dist
 /build
+/old
+/*.egg-info
+
 
 /venv
 .idea

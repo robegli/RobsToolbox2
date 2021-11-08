@@ -4,7 +4,17 @@ import yaml
 import os.path
 from abc import ABC, abstractmethod
 
-from toolbox import RTB, log, pp
+from Robs_Toolbox2.toolbox import RTB, log, pp
+
+
+def get_yaml_creds(filename: str = 'creds.yml', cred_key: str = 'MyCreds'):
+    with open(filename, 'r') as f:
+        return yaml.safe_load(f).get(cred_key, {})
+
+
+def get_config_yaml(filename: str = 'config.yml'):
+    with open(filename, 'r') as f:
+        return yaml.safe_load(f)
 
 
 def check_required_files(filelist: dict):
@@ -14,6 +24,43 @@ def check_required_files(filelist: dict):
                 FileHandlerJSON.save_data_to_file([], filename=file)
             if file.endswith('.yml'):
                 FileHandlerYAML.save_data_to_file([], filename=file)
+
+
+def check_required_directory(outfolder: str = './_Newfolder', create_folder = False) -> bool:
+    """
+    Check for the existence of a directory, create if desired
+    :param outfolder:
+    :param create_folder:
+    :return:
+    """
+    if os.path.isdir(outfolder):
+        log.debug(f"Folder '{outfolder}' already exists.")
+        return True
+    else:
+        log.debug(f"Folder '{outfolder}' does not exist.")
+        if create_folder:
+            try:
+                os.mkdir(outfolder)
+                log.debug(f"Folder '{outfolder}' created.")
+                return True
+            except Exception as e:
+                log.warning(f"Unable to create directory '{outfolder}' : {e}")
+                return False
+
+
+def check_structure(config, config_loc: str = 'DIRECTORY', parent_directory: str = None):
+    """
+    config_loc: keyword name for folder structure config
+    parent_directory: build a parent directory to put all of structure into
+        - used by meraki tools to allow multiple org ids.
+    """
+    pdir = ""
+    if parent_directory:
+        check_required_directory(outfolder=parent_directory, create_folder=True)
+        pdir = parent_directory
+    for folder in config[config_loc]:
+        folder_name = pdir + config[config_loc][folder]
+        check_required_directory(outfolder=folder_name, create_folder=True)
 
 
 class FileHandler(ABC):
@@ -43,7 +90,7 @@ class FileHandler(ABC):
         """load dict object from file"""
 
     @abstractmethod
-    def load_list_from_file(self, filename: str = None, data_only: bool = True) -> dict:
+    def load_list_from_file(self, filename: str = None, data_only: bool = True) -> list:
         """Load list object from file"""
 
 
@@ -61,27 +108,25 @@ class FileHandlerJSON(FileHandler):
 
     @staticmethod
     def _load_any_from_json_file(filename, data_only: bool = True) -> dict or list:
-        if not RTB.check_file(filename):
-            return None
-        with open(filename, 'r') as file:
-            data = json.load(file)
-            pp(data)
-            if data.get('data', None):
-                data['date'] = RTB.convert_str_to_datetime(data['date'])
-            log.debug(f'Loaded file{filename}, dated: {data.get("date", None)}')
+        try:
+            with open(filename, 'r') as file:
+                data = json.load(file)
+                if data.get('data', None):
+                    data['date'] = RTB.convert_str_to_datetime(data['date'])
+                log.debug(f'Loaded file{filename}, dated: {data.get("date", None)}')
             if data_only:
                 return data.get('data', None)
-        return data
+            return data
+        except FileNotFoundError as e:
+            log.error(f"File '{filename}' Not Found : {e}")
+            return None
 
     def load_dict_from_file(self, filename: str = None, data_only: bool = True) -> dict:
         """load dict object from .json file"""
         filename = filename if filename.endswith(self.extension) else filename + self.extension
         data = self._load_any_from_json_file(filename=filename, data_only=data_only)
-        print(type(data))
-        pp(data)
         if type(data) is dict:
             return data
-        print('did not return data')
         return {}
 
     def load_list_from_file(self, filename: str = None, data_only: bool = True) -> list:
@@ -107,12 +152,17 @@ class FileHandlerYAML(FileHandler):
         return True
 
     @staticmethod
-    def _load_any_from_yml_file(filename: str = None, data_only: bool = True) -> dict:
-        with open(filename, 'r') as f:
-            data = yaml.safe_load(f)
-        if data_only:
-            return data.get('data', None)
-        return data
+    def _load_any_from_yml_file(filename: str = None, data_only: bool = True) -> dict or list:
+        try:
+            with open(filename, 'r') as f:
+                data = yaml.safe_load(f)
+                log.debug(f'Loaded file{filename}, dated: {data.get("date", None)}')
+            if data_only:
+                return data.get('data', None)
+            return data
+        except FileNotFoundError as e:
+            log.error(f"File '{filename}' Not Found : {e}")
+            return None
 
     def load_dict_from_file(self, filename: str = None, data_only: bool = True) -> dict:
         filename = self.check_filename(filename)
@@ -121,7 +171,7 @@ class FileHandlerYAML(FileHandler):
             return data
         return {}
 
-    def load_list_from_file(self, filename: str = None, data_only: bool = True) -> dict:
+    def load_list_from_file(self, filename: str = None, data_only: bool = True) -> list:
         filename = self.check_filename(filename)
         data = self._load_any_from_yml_file(filename=filename, data_only=data_only)
         if type(data) is list:
