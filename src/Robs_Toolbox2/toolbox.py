@@ -6,7 +6,11 @@ import logzero
 import functools
 import pprint
 
-
+DEBUG = logzero.DEBUG           # 10
+INFO = logzero.INFO             # 20
+WARN = logzero.WARN             # 30
+ERROR = logzero.ERROR           # 40
+CRITICAL = logzero.CRITICAL     # 50
 
 log_format = '%(color)s[%(levelname)1.1s %(asctime)s %(module)s:%(lineno)d]%(end_color)s ' \
              '%(funcName)s :: %(message)s'
@@ -28,10 +32,15 @@ def my_time(func):
     @functools.wraps(func)
     def wrapper_timer(*args, **kwargs):
         tic = time.perf_counter()
+        loglevel = args[0].__dict__.get('_loglevel', None)
         value = func(*args, **kwargs)
         toc = time.perf_counter()
         elapsed_time = toc - tic
-        print(f"{func.__name__} Elapsed time: {elapsed_time:0.4f} seconds")
+        if loglevel is None:
+            print(f"{func.__name__} Elapsed time: {elapsed_time:0.4f} seconds")
+        else:
+            if loglevel <= 10:
+                print(f"{func.__name__} Elapsed time: {elapsed_time:0.4f} seconds")
         return value
 
     return wrapper_timer
@@ -47,13 +56,31 @@ def my_async_time(func):
     @functools.wraps(func)
     async def wrapper_timer(*args, **kwargs):
         tic = time.perf_counter()
+        loglevel = args[0].__dict__.get('_loglevel', None)
+        # print("loglevel", loglevel)
         value = await func(*args, **kwargs)
         toc = time.perf_counter()
         elapsed_time = toc - tic
-        print(f"{func.__name__} Elapsed time: {elapsed_time:0.4f} seconds")
+        if loglevel is None:
+            print(f"{func.__name__} Elapsed time: {elapsed_time:0.4f} seconds")
+        else:
+            if loglevel <= 10:
+                print(f"{func.__name__} X Elapsed time: {elapsed_time:0.4f} seconds")
         return value
 
     return wrapper_timer
+
+
+def run_in_loop(f):
+    # Run async coroutine in async loop, unless loop already running
+    def wrapper(*args, **kwargs):
+        api_handler = args[0]
+        if api_handler.loop.is_running():
+            return f(*args, **kwargs)
+        else:
+            print(f"Running {f.__name__} in async loop")
+            return api_handler.loop.run_until_complete(f(*args, **kwargs))
+    return wrapper
 
 
 class EnvironmentTools:
@@ -115,8 +142,6 @@ class EnvironmentTools:
             except Exception as e:
                 log.warning(f"Unable to create file '{filename}': {e}")
         return False
-
-
 
 
 class StringTools:
@@ -206,7 +231,7 @@ class DataHandler:
             return {}
 
     @staticmethod
-    def search_list_of_dicts_for_value_using_next(lst: list, value, key:str) -> dict:
+    def search_list_of_dicts_for_value_using_next(lst: list, value, key: str) -> dict:
         """Mostly here to keep Next() visible -- Will only find first available match"""
         try:
             item = next((lst[item] for item in lst if value in list[item][key]), {})
@@ -269,7 +294,7 @@ class DataHandler:
         for enum, choice in enumerate(choices):
             line = f'{enum + offset:3}'
             for key in keys:
-                line += f"   {key}:{RTB.xstr(choice[key]):<10}"
+                line += f"   {key}:{RTB.xstr(choice.get(key, None)):<10}"
             print(line)
 
         selection = input('Selection (or Q): ')
@@ -277,7 +302,7 @@ class DataHandler:
             return []
         try:
             selection = int(selection)
-            return choices[selection - offset]
+            return [choices[selection - offset]]
         except ValueError as e:
             print('Incorrect selection ')
         except IndexError as e:
@@ -292,15 +317,13 @@ class DataHandler:
             print(f"{key}: {val}")
 
 
-
 class RTB(EnvironmentTools, StringTools, DataHandler):
-
     pass
 
 
 class PSGTools:
 
-    #TODO: move these to their own module, tools for psg.  no need to keep here.
+    # TODO: move these to their own module, tools for psg.  no need to keep here.
 
     @staticmethod
     def offset_window(location: tuple[int or None, int or None],
@@ -316,6 +339,7 @@ class PSGTools:
     @staticmethod
     def layout_tester(layout: list[list], timeout: int = None):
         pass
+
 
 if __name__ == '__main__':
     tools = RTB()

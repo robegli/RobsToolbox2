@@ -7,12 +7,16 @@ from abc import ABC, abstractmethod
 from Robs_Toolbox2.toolbox import RTB, log, pp
 
 
-def get_yaml_creds(filename: str = 'creds.yml', cred_key: str = 'MyCreds'):
+def get_yaml_creds(filename: str = 'credentials.yml', cred_key: str = 'MyCreds'):
+    # print(filename, os.path.exists(filename))
+    # print(os.path.dirname(os.path.realpath(__file__)))
     with open(filename, 'r') as f:
         return yaml.safe_load(f).get(cred_key, {})
 
 
 def get_config_yaml(filename: str = 'config.yml'):
+    # print(filename, os.path.exists(filename))
+    # print(os.path.dirname(os.path.realpath(__file__)))
     with open(filename, 'r') as f:
         return yaml.safe_load(f)
 
@@ -26,7 +30,7 @@ def check_required_files(filelist: dict):
                 FileHandlerYAML.save_data_to_file([], filename=file)
 
 
-def check_required_directory(outfolder: str = './_Newfolder', create_folder = False) -> bool:
+def check_required_directory(outfolder: str = './_Newfolder', create_folder: bool = False) -> bool:
     """
     Check for the existence of a directory, create if desired
     :param outfolder:
