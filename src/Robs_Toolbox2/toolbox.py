@@ -251,6 +251,16 @@ class DataHandler:
         return output
 
     @staticmethod
+    def search_list_of_dicts_for_string_by_dict(lst: list[dict], parameters: dict) -> list:
+        output = []
+        for item in lst:
+            for k, v in parameters.items():
+                if re.findall(v, RTB.xstr(item[k], '')):
+                    output.append(item)
+                    continue
+        return output
+
+    @staticmethod
     def search_list_of_dicts_for_string_using_in(lst: list, value: str, key: str) -> list:
         """ FInd list items using keyword/values. Can be used to find partial string values."""
         output = []
@@ -316,29 +326,40 @@ class DataHandler:
         for key, val in data.items():
             print(f"{key}: {val}")
 
+    @staticmethod
+    def single_item_list_remover(in_list):
+        if type(in_list) != list:
+            return in_list
+        if 2 <= len(in_list):
+            return in_list
+        if len(in_list) < 1:
+            return None
+        return in_list[0]
+
+
 
 class RTB(EnvironmentTools, StringTools, DataHandler):
     pass
 
 
-class PSGTools:
-
-    # TODO: move these to their own module, tools for psg.  no need to keep here.
-
-    @staticmethod
-    def offset_window(location: tuple[int or None, int or None],
-                      offset: tuple[int or None, int or None]) -> tuple:
-        """Offset window launch location"""
-        location: list[int, int] = list(location)
-        if location[0] is not None and offset[0] is not None:
-            location[0] += offset[0]
-        if location[1] is not None and offset[1] is not None:
-            location[1] += offset[1]
-        return tuple(location)
-
-    @staticmethod
-    def layout_tester(layout: list[list], timeout: int = None):
-        pass
+# class PSGTools:
+#
+#     # T ODO: move these to their own module, tools for psg.  no need to keep here.
+#
+#     @staticmethod
+#     def offset_window(location: tuple[int or None, int or None],
+#                       offset: tuple[int or None, int or None]) -> tuple:
+#         """Offset window launch location"""
+#         location: list[int, int] = list(location)
+#         if location[0] is not None and offset[0] is not None:
+#             location[0] += offset[0]
+#         if location[1] is not None and offset[1] is not None:
+#             location[1] += offset[1]
+#         return tuple(location)
+#
+#     @staticmethod
+#     def layout_tester(layout: list[list], timeout: int = None):
+#         pass
 
 
 if __name__ == '__main__':

@@ -7,7 +7,9 @@ src/RobsToolbox2.egg-info/SOURCES.txt
 src/RobsToolbox2.egg-info/dependency_links.txt
 src/RobsToolbox2.egg-info/requires.txt
 src/RobsToolbox2.egg-info/top_level.txt
+src/Robs_Toolbox2/GUITools.py
 src/Robs_Toolbox2/__init__.py
 src/Robs_Toolbox2/filehandler.py
 src/Robs_Toolbox2/requesthelper.py
 src/Robs_Toolbox2/toolbox.py
+src/Robs_Toolbox2/xlsx.py
